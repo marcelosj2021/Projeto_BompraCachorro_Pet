@@ -1,9 +1,9 @@
 /**
- * Projeto_BompraCachorro_Pet - Camada Logica e de Seguranca
- * Diretrizes: Secure by Design & Mitigacoes OWASP Top 10 (A07 - Identification & Auth Failures)
+ * Projeto_BompraCachorro_Pet - Camada Lógica e de Segurança
+ * Diretrizes: Secure by Design & Mitigações OWASP Top 10
  */
 
-// OWASP A03: Sanitizacao estrita contra XSS
+// OWASP A03 (Anti-XSS): Sanitização estrita contra injeção de HTML
 function sanitizeText(input) {
     if (typeof input !== 'string') return '';
     const tempDiv = document.createElement('div');
@@ -11,7 +11,7 @@ function sanitizeText(input) {
     return tempDiv.innerHTML;
 }
 
-// Funcao nativa Web Cryptography API para calculo de SHA-256
+// Criptografia e Hashing Unidirecional Seguro SHA-256 via Web Crypto API
 async function sha256(message) {
     const msgBuffer = new TextEncoder().encode(message);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -20,112 +20,131 @@ async function sha256(message) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Elementos da interface de autenticação
     const loginView = document.getElementById('login-view');
     const dashboardView = document.getElementById('dashboard-view');
     const loginForm = document.getElementById('login-form');
     const authAlert = document.getElementById('auth-alert');
     const loggedUserDisplay = document.getElementById('logged-user-display');
     const btnLogout = document.getElementById('btn-logout');
-    const submitBtn = loginForm ? loginForm.querySelector('button[type="submit"]') : null;
 
-    // Chaves de controle de sessao e controle de forca bruta
+    // Elementos de agendamento
+    const bookingForm = document.getElementById('booking-form');
+    const bookingAlert = document.getElementById('booking-alert');
+    const petsList = document.getElementById('pets-list');
+    const statAgendamentos = document.getElementById('stat-agendamentos-count');
+    const statFila = document.getElementById('stat-fila-count');
+
+    // Chaves de controle de sessão
     const SESSION_TOKEN_KEY = 'pbcp_auth_token';
-    const SESSION_USER_KEY  = 'pbcp_auth_user';
-    const ATTEMPTS_KEY      = 'pbcp_failed_attempts';
-    const LOCKOUT_KEY       = 'pbcp_lockout_until';
+    const SESSION_USER_KEY = 'pbcp_auth_user';
 
-    const MAX_ATTEMPTS  = 4;
-    const LOCKOUT_TIME  = 15 * 60 * 1000; // 15 minutos em milissegundos
-
-    // Hash SHA-256 da senha 'PetSeguro@2026' (A senha real nao consta no codigo)
-    const VALID_USER_HASH = 'operador_vet';
+    // Hash SHA-256 da senha 'PetSeguro@2026'
+    const VALID_USER = 'operador_vet';
     const VALID_PASS_HASH = '899f8eb7ff3b99dbfe595568ef5c1103c81216666df3b3e2182046fa32d43a67';
 
-    // OWASP A01: Validacao de sessao previa
+    // Checagem de sessão ativa ao carregar a página
     const activeToken = sessionStorage.getItem(SESSION_TOKEN_KEY);
-    const activeUser  = sessionStorage.getItem(SESSION_USER_KEY);
+    const activeUser = sessionStorage.getItem(SESSION_USER_KEY);
+
     if (activeToken && activeUser) {
         showDashboard(activeUser);
     }
 
-    // Valida se o utilizador esta em periodo de bloqueio
-    function checkLockout() {
-        const lockoutUntil = parseInt(localStorage.getItem(LOCKOUT_KEY), 10);
-        if (lockoutUntil && Date.now() < lockoutUntil) {
-            const minutesLeft = Math.ceil((lockoutUntil - Date.now()) / 60000);
-            showAlert(`Acesso temporariamente bloqueado por excesso de tentativas falhadas. Tente novamente em ${minutesLeft} minuto(s).`);
-            if (submitBtn) submitBtn.disabled = true;
-            return true;
-        } else if (lockoutUntil && Date.now() >= lockoutUntil) {
-            localStorage.removeItem(LOCKOUT_KEY);
-            localStorage.setItem(ATTEMPTS_KEY, '0');
-            if (submitBtn) submitBtn.disabled = false;
-            hideAlert();
+    // Processamento do Formulário de Acesso com Verificação Criptográfica
+    loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        hideAlert();
+
+        const usernameInput = document.getElementById('username').value.trim();
+        const passwordInput = document.getElementById('password').value;
+
+        if (!usernameInput || !passwordInput) {
+            showAlert('Informe o usuário e a chave de acesso.');
+            return;
         }
-        return false;
-    }
 
-    checkLockout();
+        if (usernameInput.length > 30 || passwordInput.length > 64) {
+            showAlert('Tamanho de credenciais fora dos limites permitidos.');
+            return;
+        }
 
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            hideAlert();
+        // Hashing assíncrono da senha digitada
+        const inputHash = await sha256(passwordInput);
 
-            if (checkLockout()) return;
+        if (usernameInput === VALID_USER && inputHash === VALID_PASS_HASH) {
+            const sessionToken = crypto.randomUUID();
+            sessionStorage.setItem(SESSION_TOKEN_KEY, sessionToken);
+            sessionStorage.setItem(SESSION_USER_KEY, usernameInput);
 
-            const usernameInput = document.getElementById('username').value.trim();
-            const passwordInput = document.getElementById('password').value;
+            loginForm.reset();
+            showDashboard(usernameInput);
+        } else {
+            showAlert('Credenciais inválidas. Tente novamente.');
+        }
+    });
 
-            if (!usernameInput || !passwordInput) {
-                showAlert('Informe o usuario e a senha de acesso.');
-                return;
-            }
+    // Logout
+    btnLogout.addEventListener('click', () => {
+        sessionStorage.removeItem(SESSION_TOKEN_KEY);
+        sessionStorage.removeItem(SESSION_USER_KEY);
+        sessionStorage.clear();
 
-            if (usernameInput.length > 30 || passwordInput.length > 64) {
-                showAlert('Tamanho de credenciais fora dos limites permitidos.');
-                return;
-            }
+        dashboardView.classList.add('hidden');
+        loginView.classList.remove('hidden');
+    });
 
-            const hashedInput = await sha256(passwordInput);
+    // Processamento de Novo Agendamento para Clientes
+    bookingForm.addEventListener('submit', (event) => {
+        event.preventDefault();
 
-            if (usernameInput === VALID_USER_HASH && hashedInput === VALID_PASS_HASH) {
-                localStorage.removeItem(ATTEMPTS_KEY);
-                localStorage.removeItem(LOCKOUT_KEY);
+        const clientName = sanitizeText(document.getElementById('client-name').value.trim());
+        const petName = sanitizeText(document.getElementById('pet-name').value.trim());
+        const serviceType = sanitizeText(document.getElementById('service-type').value);
+        const bookingDate = sanitizeText(document.getElementById('booking-date').value);
+        const bookingTime = sanitizeText(document.getElementById('booking-time').value);
 
-                const sessionToken = crypto.randomUUID();
-                sessionStorage.setItem(SESSION_TOKEN_KEY, sessionToken);
-                sessionStorage.setItem(SESSION_USER_KEY, usernameInput);
+        if (!clientName || !petName || !serviceType || !bookingDate || !bookingTime) {
+            return;
+        }
 
-                loginForm.reset();
-                showDashboard(usernameInput);
-            } else {
-                let failedAttempts = parseInt(localStorage.getItem(ATTEMPTS_KEY) || '0', 10) + 1;
-                localStorage.setItem(ATTEMPTS_KEY, failedAttempts.toString());
+        // Criação de card dinâmico no painel
+        const newCard = document.createElement('article');
+        newCard.className = 'pet-card fade-in';
+        newCard.innerHTML = `
+            <div class="pet-avatar-wrapper">
+                <img src="https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?auto=format&fit=crop&w=600&q=80" alt="Pet Agendado" class="pet-avatar">
+                <span class="badge-status badge-info">Horário Marcado</span>
+            </div>
+            <div class="pet-info">
+                <h4>${petName} <span class="breed">Agendamento</span></h4>
+                <p class="tutor"><strong>Tutor:</strong> ${clientName}</p>
+                <p class="obs"><strong>Procedimento:</strong> ${serviceType}</p>
+                <div class="pet-footer">
+                    <span class="status-indicator info">● Marcado: ${bookingDate} às ${bookingTime}</span>
+                </div>
+            </div>
+        `;
 
-                if (failedAttempts >= MAX_ATTEMPTS) {
-                    const lockoutDeadline = Date.now() + LOCKOUT_TIME;
-                    localStorage.setItem(LOCKOUT_KEY, lockoutDeadline.toString());
-                    if (submitBtn) submitBtn.disabled = true;
-                    showAlert('Limite de 4 tentativas excedido. Acesso bloqueado por 15 minutos.');
-                } else {
-                    const remaining = MAX_ATTEMPTS - failedAttempts;
-                    showAlert(`Credenciais invalidas. Restam ${remaining} tentativa(s) antes do bloqueio.`);
-                }
-            }
-        });
-    }
+        petsList.prepend(newCard);
 
-    if (btnLogout) {
-        btnLogout.addEventListener('click', () => {
-            sessionStorage.removeItem(SESSION_TOKEN_KEY);
-            sessionStorage.removeItem(SESSION_USER_KEY);
-            sessionStorage.clear();
+        // Atualização de contadores
+        let currentTotal = parseInt(statAgendamentos.textContent, 10) || 0;
+        statAgendamentos.textContent = currentTotal + 1;
 
-            dashboardView.classList.add('hidden');
-            loginView.classList.remove('hidden');
-        });
-    }
+        let filaTotal = parseInt(statFila.textContent, 10) || 0;
+        statFila.textContent = filaTotal + 1;
+
+        // Feedback de sucesso
+        bookingAlert.textContent = `Agendamento confirmado para o pet "${petName}" em ${bookingDate} às ${bookingTime}!`;
+        bookingAlert.classList.remove('hidden');
+
+        bookingForm.reset();
+
+        setTimeout(() => {
+            bookingAlert.classList.add('hidden');
+        }, 5000);
+    });
 
     function showDashboard(user) {
         loginView.classList.add('hidden');
