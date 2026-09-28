@@ -3,167 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <title>Projeto_BompraCachorro_Pet | Centro de Cuidados & Gestão</title>
+    <title>Projeto_BompraCachorro_Pet | Centro Veterinário & Estética</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="app-container">
-        
-        <!-- Tela de Autenticação com Banner Visual de Pets -->
-        <section id="login-view" class="card-login fade-in">
+
+        <!-- TELA DE AUTENTICAÇÃO -->
+        <main id="login-view" class="card-login fade-in">
             <div class="login-banner">
-                <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=800&q=80" alt="Cachorro Feliz" class="hero-pet-img">
+                <img 
+                    src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=800&q=80" 
+                    alt="Bom pra Cachorro Pet - Centro Integrado" 
+                    class="hero-pet-img"
+                >
                 <div class="banner-overlay">
-                    <span class="pet-badge">🐕 Centro Veterinário & Estética</span>
+                    <span class="pet-badge">🐕 Bom pra Cachorro • Estética & Saúde</span>
                 </div>
             </div>
 
             <div class="login-body">
                 <div class="brand-header">
+                    <div class="brand-logo-circle">🐶</div>
                     <h1>Projeto_BompraCachorro_Pet</h1>
-                    <p class="subtitle">Portal Administrativo & Fila de Cuidados</p>
+                    <p class="subtitle">Portal Integrado de Atendimento & Agendamentos</p>
                 </div>
 
-                <form id="login-form" novalidate>
+                <form id="login-form" autocomplete="off">
                     <div class="form-group">
                         <label for="username">Identificação do Profissional</label>
-                        <input 
-                            type="text" 
-                            id="username" 
-                            placeholder="Ex: operador_vet" 
-                            autocomplete="off" 
-                            required 
-                            maxlength="30"
-                            spellcheck="false"
-                        >
+                        <input type="text" id="username" placeholder="Ex: operador_vet" required>
                     </div>
 
                     <div class="form-group">
                         <label for="password">Chave de Acesso</label>
-                        <input 
-                            type="password" 
-                            id="password" 
-                            placeholder="••••••••" 
-                            autocomplete="current-password" 
-                            required 
-                            maxlength="64"
-                        >
+                        <input type="password" id="password" placeholder="••••••••" required>
                     </div>
 
-                    <button type="submit" id="btn-submit" class="btn-primary">Acessar Painel Pet 🐾</button>
+                    <button type="submit" id="btn-login" class="btn-primary">
+                        <span>Acessar Painel Pet</span>
+                    </button>
+
                     <div id="auth-alert" class="alert-box hidden" role="alert"></div>
                 </form>
-                
-                <footer class="card-footer">
-                    <small>🔒 Conexão Criptografada | Projeto_BompraCachorro_Pet</small>
-                </footer>
-            </div>
-        </section>
 
-        <!-- Painel Interno: Gestão de Pacientes com Fotos de Animais -->
+                <div class="card-footer">
+                    🔒 Conexão Criptografada | Projeto_BompraCachorro_Pet
+                </div>
+            </div>
+        </main>
+
+        <!-- DASHBOARD & AGENDAMENTO -->
         <section id="dashboard-view" class="dashboard hidden fade-in">
             <header class="topbar">
                 <div class="topbar-brand">
-                    <span class="brand-icon">🐾</span>
+                    <div class="brand-logo-circle small">🐶</div>
                     <div>
                         <h2>Projeto_BompraCachorro_Pet</h2>
-                        <small>Gestão de Estética e Cuidados Veterinários</small>
+                        <small>Portal Administrativo & Fila de Cuidados</small>
                     </div>
                 </div>
                 <div class="topbar-user">
                     <span class="user-chip">Profissional: <strong id="logged-user-display">---</strong></span>
-                    <button id="btn-logout" class="btn-danger">Sair (Logout)</button>
+                    <button id="btn-logout" class="btn-danger">Sair do Painel</button>
                 </div>
             </header>
 
-            <main class="dashboard-content">
-                <!-- Métricas com Ícones e Estilo Visual -->
+            <div class="dashboard-content">
+                <!-- Métricas do Centro -->
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-icon">🛁</div>
+                        <div class="stat-icon stat-blue">📋</div>
                         <div>
-                            <h3>Banho & Tosa Hoje</h3>
-                            <p class="stat-number">12</p>
-                            <small class="stat-status text-amber">4 em andamento</small>
+                            <h3>Fila de Atendimento</h3>
+                            <p class="stat-number text-blue" id="stat-fila-count">3</p>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon">🩺</div>
+                        <div class="stat-icon stat-amber">⏳</div>
                         <div>
-                            <h3>Consultas Veterinárias</h3>
-                            <p class="stat-number">5</p>
-                            <small class="stat-status text-blue">Próxima às 16:30</small>
+                            <h3>Em Tratamento / Banho</h3>
+                            <p class="stat-number text-amber">2</p>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon">💉</div>
+                        <div class="stat-icon stat-green">📅</div>
                         <div>
-                            <h3>Vacinas & Medicamentos</h3>
-                            <p class="stat-number">8</p>
-                            <small class="stat-status text-green">Estoque 100% ok</small>
+                            <h3>Agendamentos de Hoje</h3>
+                            <p class="stat-number text-green" id="stat-agendamentos-count">4</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Lista Visual de Pacientes com Fotos Reais -->
-                <div class="pets-section">
+                <!-- Formulário de Agendamento com Data e Hora Marcadas -->
+                <div class="form-section-card">
                     <div class="section-title-bar">
-                        <h3>🐶 Pacientes do Dia & Atendimentos em Andamento</h3>
-                        <span class="counter-badge">3 Pacientes Ativos</span>
+                        <h3>📅 Novo Agendamento de Cliente</h3>
+                        <span class="counter-badge">Reserva Imediata</span>
                     </div>
 
-                    <div class="pets-grid">
-                        <!-- Pet 1 -->
-                        <div class="pet-card">
-                            <div class="pet-avatar-wrapper">
-                                <img src="https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=300&q=80" alt="Golden Retriever Thor" class="pet-avatar">
-                                <span class="badge-status badge-warning">Banho & Tosa</span>
-                            </div>
-                            <div class="pet-info">
-                                <h4>Thor <span class="breed">Golden Retriever</span></h4>
-                                <p class="tutor">👤 Tutora: <strong>Mariana Silva</strong></p>
-                                <p class="obs">✂️ Serviço: Banho aromático e tosa higiênica.</p>
-                                <div class="pet-footer">
-                                    <span class="status-indicator warning">Aguardando Secagem</span>
-                                </div>
-                            </div>
+                    <form id="booking-form" class="booking-grid">
+                        <div class="form-group">
+                            <label for="client-name">Nome do Tutor</label>
+                            <input type="text" id="client-name" placeholder="Ex: Marcelo Santos" required>
                         </div>
 
-                        <!-- Pet 2 -->
-                        <div class="pet-card">
-                            <div class="pet-avatar-wrapper">
-                                <img src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=300&q=80" alt="Poodle Mel" class="pet-avatar">
-                                <span class="badge-status badge-info">Veterinário</span>
-                            </div>
-                            <div class="pet-info">
-                                <h4>Mel <span class="breed">Poodle Toy</span></h4>
-                                <p class="tutor">👤 Tutor: <strong>Carlos Alberto</strong></p>
-                                <p class="obs">🩺 Serviço: Check-up clínico geral anual.</p>
-                                <div class="pet-footer">
-                                    <span class="status-indicator info">Em Consulta</span>
-                                </div>
-                            </div>
+                        <div class="form-group">
+                            <label for="pet-name">Nome do Pet</label>
+                            <input type="text" id="pet-name" placeholder="Ex: Bob" required>
                         </div>
 
-                        <!-- Pet 3 -->
-                        <div class="pet-card">
-                            <div class="pet-avatar-wrapper">
-                                <img src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=300&q=80" alt="Bulldog Francês Bob" class="pet-avatar">
-                                <span class="badge-status badge-success">Concluído</span>
-                            </div>
-                            <div class="pet-info">
-                                <h4>Bob <span class="breed">Bulldog Francês</span></h4>
-                                <p class="tutor">👤 Tutora: <strong>Fernanda Souza</strong></p>
-                                <p class="obs">💉 Serviço: Aplicação Vacina V10 + Raiva.</p>
-                                <div class="pet-footer">
-                                    <span class="status-indicator success">Pronto para Retirada</span>
-                                </div>
-                            </div>
+                        <div class="form-group">
+                            <label for="service-type">Serviço Pretendido</label>
+                            <select id="service-type" class="custom-select" required>
+                                <option value="">Selecione o serviço...</option>
+                                <option value="Consulta Veterinária Geral">Consulta Veterinária Geral</option>
+                                <option value="Banho & Tosa Higiênica">Banho & Tosa Higiênica</option>
+                                <option value="Vacinação Polivalente (V10)">Vacinação Polivalente (V10)</option>
+                                <option value="Estética Completa & Hidratação">Estética Completa & Hidratação</option>
+                            </select>
                         </div>
-                    </div>
+
+                        <div class="form-group">
+                            <label for="booking-date">Data do Agendamento</label>
+                            <input type="date" id="booking-date" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="booking-time">Horário Marcado</label>
+                            <input type="time" id="booking-time" required>
+                        </div>
+
+                        <div class="form-group form-action-btn">
+                            <label>&nbsp;</label>
+                            <button type="submit" class="btn-primary btn-book">Confirmar Horário</button>
+                        </div>
+                    </form>
+
+                    <div id="booking-alert" class="alert-box success hidden" role="status"></div>
                 </div>
-            </main>
+
+                <!-- Fila de Atendimento -->
+                <div class="section-title-bar">
+                    <h3>🐾 Fila Atual no Centro Veterinário</h3>
+                    <span class="counter-badge">Tempo Real</span>
+                </div>
+
+                <div class="pets-grid" id="pets-list">
+                    <!-- Card 1 -->
+                    <article class="pet-card">
+                        <div class="pet-avatar-wrapper">
+                            <img src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=600&q=80" alt="Shiba Inu" class="pet-avatar">
+                            <span class="badge-status badge-warning">Em Espera</span>
+                        </div>
+                        <div class="pet-info">
+                            <h4>Hachi <span class="breed">Shiba Inu</span></h4>
+                            <p class="tutor"><strong>Tutor:</strong> Carlos Eduardo</p>
+                            <p class="obs"><strong>Procedimento:</strong> Banho relaxante & corte de unhas</p>
+                            <div class="pet-footer">
+                                <span class="status-indicator warning">● Chegada: 09:30</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Card 2 -->
+                    <article class="pet-card">
+                        <div class="pet-avatar-wrapper">
+                            <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=600&q=80" alt="Golden Retriever" class="pet-avatar">
+                            <span class="badge-status badge-info">Em Procedimento</span>
+                        </div>
+                        <div class="pet-info">
+                            <h4>Thor <span class="breed">Golden Retriever</span></h4>
+                            <p class="tutor"><strong>Tutor:</strong> Juliana Paes</p>
+                            <p class="obs"><strong>Procedimento:</strong> Vacina Polivalente V10</p>
+                            <div class="pet-footer">
+                                <span class="status-indicator info">● Sala Clínica 01</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Card 3 -->
+                    <article class="pet-card">
+                        <div class="pet-avatar-wrapper">
+                            <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=600&q=80" alt="Gato Siamês" class="pet-avatar">
+                            <span class="badge-status badge-success">Pronto</span>
+                        </div>
+                        <div class="pet-info">
+                            <h4>Mimi <span class="breed">Siamês</span></h4>
+                            <p class="tutor"><strong>Tutora:</strong> Renata Lima</p>
+                            <p class="obs"><strong>Procedimento:</strong> Tosa higiênica e hidratação</p>
+                            <div class="pet-footer">
+                                <span class="status-indicator success">● Pronto para Retirada</span>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+            </div>
         </section>
 
     </div>
