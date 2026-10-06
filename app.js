@@ -3,12 +3,18 @@
 // ==========================================
 const VALID_USER = 'operador_vet';
 
-// Hashes SHA-256 das senhas autorizadas (texto plano não exposto)
+// Hashes SHA-256 das senhas autorizadas
 const VALID_PASS_HASH = '256a26df093771144ffe808bfa6127d56e69911e77b61458c23b223e5f91f6ad';
 const VALID_PASS_HASH_ALT = '899f8eb7ff3b99dbfe595568ef5c1103c81216666df3b3e2182046fa32d43a67';
 
 const SESSION_TOKEN_KEY = 'bompracachorro_token';
 const SESSION_USER_KEY = 'bompracachorro_user';
+
+// Regras de Bloqueio por Força Bruta
+const MAX_ATTEMPTS = 4;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutos de bloqueio
+
+let lockoutInterval = null;
 
 // Função de hashing criptográfico SHA-256
 async function sha256(text) {
@@ -58,8 +64,6 @@ function showDashboard(username) {
 function showLogin() {
     sessionStorage.removeItem(SESSION_TOKEN_KEY);
     sessionStorage.removeItem(SESSION_USER_KEY);
-    localStorage.removeItem('loginAttempts');
-    localStorage.removeItem('lockoutExpiry');
 
     const loginView = document.getElementById('login-view');
     const dashboardView = document.getElementById('dashboard-view');
@@ -72,6 +76,87 @@ function showLogin() {
         loginView.classList.remove('hidden');
         loginView.style.display = 'block';
     }
+
+    verificarBloqueioExistente();
+}
+
+// ==========================================
+// Mecanismo de Bloqueio e Contagem Regressiva
+// ==========================================
+function verificarBloqueioExistente() {
+    const lockoutExpiry = localStorage.getItem('lockoutExpiry');
+    if (lockoutExpiry) {
+        const tempoRestante = Number(lockoutExpiry) - Date.now();
+        if (tempoRestante > 0) {
+            iniciarContagemBloqueio(tempoRestante);
+            return true;
+        } else {
+            redefinirTentativas();
+        }
+    }
+    return false;
+}
+
+function redefinirTentativas() {
+    if (lockoutInterval) clearInterval(lockoutInterval);
+    localStorage.removeItem('loginAttempts');
+    localStorage.removeItem('lockoutExpiry');
+
+    const authAlert = document.getElementById('auth-alert');
+    const btnSubmit = document.getElementById('btn-submit');
+    const userInput = document.getElementById('username');
+    const passInput = document.getElementById('password');
+
+    if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = 'Acessar Painel Pet 🐾';
+    }
+    if (userInput) userInput.disabled = false;
+    if (passInput) passInput.disabled = false;
+    if (authAlert) authAlert.classList.add('hidden');
+}
+
+function iniciarContagemBloqueio(duracaoInicial) {
+    const authAlert = document.getElementById('auth-alert');
+    const btnSubmit = document.getElementById('btn-submit');
+    const userInput = document.getElementById('username');
+    const passInput = document.getElementById('password');
+
+    if (userInput) userInput.disabled = true;
+    if (passInput) passInput.disabled = true;
+    if (btnSubmit) btnSubmit.disabled = true;
+
+    if (authAlert) authAlert.classList.remove('hidden');
+
+    if (lockoutInterval) clearInterval(lockoutInterval);
+
+    function atualizarMensagem() {
+        const lockoutExpiry = Number(localStorage.getItem('lockoutExpiry') || 0);
+        const agora = Date.now();
+        const restanteMs = lockoutExpiry - agora;
+
+        if (restanteMs <= 0) {
+            redefinirTentativas();
+            if (authAlert) {
+                authAlert.textContent = 'Tempo esgotado. Pode tentar novamente.';
+                authAlert.classList.remove('hidden');
+            }
+            return;
+        }
+
+        const minutos = Math.floor(restanteMs / 60000);
+        const segundos = Math.floor((restanteMs % 60000) / 1000);
+        const formatMin = String(minutos).padStart(2, '0');
+        const formatSeg = String(segundos).padStart(2, '0');
+
+        const texto = `⛔ Bloqueado após ${MAX_ATTEMPTS} tentativas falhas. Tente novamente em ${formatMin}:${formatSeg}`;
+
+        if (authAlert) authAlert.textContent = texto;
+        if (btnSubmit) btnSubmit.textContent = `Acesso Bloqueado (${formatMin}:${formatSeg})`;
+    }
+
+    atualizarMensagem();
+    lockoutInterval = setInterval(atualizarMensagem, 1000);
 }
 
 // ==========================================
@@ -170,7 +255,7 @@ function setupAbas() {
             agendamentos.unshift({ pet, raca, tutor, servico, horario: formatData });
             formAg.reset();
             renderizarAgendamentos();
-            alert(`Sucesso: Agendamento para ${pet} registrado!`);
+            alert(`Sucesso: Agendamento para ${pet} guardado!`);
         };
     }
 }
@@ -208,7 +293,7 @@ window.removerAgendamento = function(index) {
 };
 
 // ==========================================
-// Validação de Autenticação Segura (Hashing)
+// Inicialização e Validação do Login
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     setupAbas();
@@ -217,28 +302,54 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedToken = sessionStorage.getItem(SESSION_TOKEN_KEY);
     if (savedUser && savedToken) {
         showDashboard(savedUser);
+        return;
     }
 
+    verificarBloqueioExistente();
+
     const loginForm = document.getElementById('login-form');
+    const authAlert = document.getElementById('auth-alert');
+
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            // Bloqueia qualquer envio se o tempo de espera ainda estiver ativo
+            if (verificarBloqueioExistente()) return;
+
             const usernameInput = document.getElementById('username')?.value.trim();
             const passwordInput = document.getElementById('password')?.value.trim();
 
             if (!usernameInput || !passwordInput) return;
 
-            // Transforma a senha digitada em hash SHA-256 antes da validação
             const inputHash = await sha256(passwordInput);
 
             if (usernameInput === VALID_USER && (inputHash === VALID_PASS_HASH || inputHash === VALID_PASS_HASH_ALT)) {
+                // Sucesso: reseta histórico de falhas
+                redefinirTentativas();
+
                 const token = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
                 sessionStorage.setItem(SESSION_TOKEN_KEY, token);
                 sessionStorage.setItem(SESSION_USER_KEY, usernameInput);
+
                 loginForm.reset();
                 showDashboard(usernameInput);
             } else {
-                alert('Credenciais inválidas!');
+                // Falha: incrementa as tentativas
+                let tentativas = Number(localStorage.getItem('loginAttempts') || 0) + 1;
+                localStorage.setItem('loginAttempts', tentativas.toString());
+
+                if (tentativas >= MAX_ATTEMPTS) {
+                    const expiry = Date.now() + LOCKOUT_DURATION_MS;
+                    localStorage.setItem('lockoutExpiry', expiry.toString());
+                    iniciarContagemBloqueio(LOCKOUT_DURATION_MS);
+                } else {
+                    const restantes = MAX_ATTEMPTS - tentativas;
+                    if (authAlert) {
+                        authAlert.textContent = `Credenciais incorretas! Restam ${restantes} tentativa(s) antes do bloqueio.`;
+                        authAlert.classList.remove('hidden');
+                    }
+                }
             }
         });
     }
