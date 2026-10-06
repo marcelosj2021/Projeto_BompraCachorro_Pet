@@ -1,0 +1,44 @@
+name: CI/CD Pipeline - Projeto BompraCachorro Pet
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Repositorio
+        uses: actions/checkout@v4
+
+      - name: Validacao Basica de Ficheiros
+        run: |
+          test -f index.html || exit 1
+          echo "Ficheiros essenciais validados com sucesso."
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Repositorio
+        uses: actions/checkout@v4
+
+      - name: Sincronizar Ficheiros para a Instancia AWS via rsync
+        uses: easingthemes/ssh-deploy@v5.0.3
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.EC2_HOST }}
+          REMOTE_USER: ${{ secrets.EC2_USER }}
+          TARGET: /var/www/html/
+          EXCLUDE: "/.git/, /.github/, README.md"
+
+      - name: Recarregar Nginx no Servidor Remoto
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo nginx -t
+            sudo systemctl reload nginx
