@@ -1,10 +1,10 @@
-// Configurações de segurança e autenticação administrativa
-const VALID_USER_HASH = 'operador_vet';
+// Configurações de segurança e credenciais
+const VALID_USER = 'operador_vet';
 const VALID_PASS_HASH = '256a26df093771144ffe808bfa6127d56e69911e77b61458c23b223e5f91f6ad';
 const MAX_ATTEMPTS = 4;
 const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutos em milissegundos
 
-// Função auxiliar para calcular o hash SHA-256 no navegador
+// Função para calcular o resumo SHA-256 no browser
 async function sha256(str) {
   const buffer = new TextEncoder().encode(str);
   const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
@@ -12,7 +12,7 @@ async function sha256(str) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Função de validação de autenticação
+// Função de validação de login
 async function validarLogin(event) {
   if (event) event.preventDefault();
 
@@ -26,7 +26,7 @@ async function validarLogin(event) {
   const userInput = (userField ? userField.value : '').trim();
   const passInput = (passField ? passField.value : '').trim();
 
-  // Verificação de bloqueio ativo
+  // Verifica bloqueio de tentativas
   const lockoutExpiry = localStorage.getItem('lockoutExpiry');
   if (lockoutExpiry && Date.now() < Number(lockoutExpiry)) {
     const minRestantes = Math.ceil((Number(lockoutExpiry) - Date.now()) / 60000);
@@ -34,16 +34,15 @@ async function validarLogin(event) {
     return;
   }
 
-  // Cálculo do hash da palavra-passe inserida
+  // Gera o hash da palavra-passe inserida
   const passHash = await sha256(passInput);
 
-  // Validação das credenciais
-  if (userInput === VALID_USER_HASH && passHash === VALID_PASS_HASH) {
-    // Sucesso na autenticação: limpa tentativas anteriores
+  // Validação: aceita utilizador e compara o hash da senha
+  if (userInput === VALID_USER && passHash === VALID_PASS_HASH) {
     localStorage.removeItem('loginAttempts');
     localStorage.removeItem('lockoutExpiry');
 
-    // Desbloqueia e apresenta o painel administrativo
+    // Remove ecrã/modal de autenticação e revela o painel
     document.querySelectorAll('[id*="login"], [class*="login"], .overlay, .modal').forEach(el => el.remove());
     document.querySelectorAll('[id*="painel"], [id*="admin"], [class*="painel"], main, #app').forEach(el => {
       el.style.display = 'block';
@@ -51,7 +50,6 @@ async function validarLogin(event) {
     });
     document.body.style.overflow = 'auto';
   } else {
-    // Falha na autenticação: controlo de tentativas
     let attempts = Number(localStorage.getItem('loginAttempts') || 0) + 1;
     localStorage.setItem('loginAttempts', attempts.toString());
 
@@ -64,7 +62,7 @@ async function validarLogin(event) {
   }
 }
 
-// Vinculação do evento de submissão do formulário
+// Registo dos eventos após carregamento do DOM
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('loginForm') || 
                document.querySelector('form') || 
@@ -73,7 +71,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (form) {
     form.addEventListener('submit', validarLogin);
     form.addEventListener('click', (e) => {
-      if (e.target && e.target.tagName === 'BUTTON') validarLogin(e);
+      if (e.target && (e.target.tagName === 'BUTTON' || e.target.type === 'submit')) {
+        validarLogin(e);
+      }
     });
   }
 });
