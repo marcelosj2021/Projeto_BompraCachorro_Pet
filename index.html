@@ -61,7 +61,7 @@
             </div>
         </section>
 
-        <!-- Painel Interno: Gestão de Pacientes com Fotos de Animais -->
+        <!-- Painel Interno: Gestão de Pacientes & Agendamentos -->
         <section id="dashboard-view" class="dashboard hidden fade-in">
             <header class="topbar">
                 <div class="topbar-brand">
@@ -72,13 +72,13 @@
                     </div>
                 </div>
                 <div class="topbar-user">
-                    <span class="user-chip">Profissional: <strong id="logged-user-display">---</strong></span>
+                    <span class="user-chip">Profissional: <strong id="logged-user-display">operador_vet</strong></span>
                     <button id="btn-logout" class="btn-danger">Sair (Logout)</button>
                 </div>
             </header>
 
             <main class="dashboard-content">
-                <!-- Métricas com Ícones e Estilo Visual -->
+                <!-- Métricas -->
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-icon">🛁</div>
@@ -106,18 +106,23 @@
                     </div>
                 </div>
 
-                <!-- Lista Visual de Pacientes com Fotos Reais -->
-                <div class="pets-section">
+                <!-- Barra de Navegação entre Abas -->
+                <div class="tabs-bar" style="display: flex; gap: 12px; margin: 24px 0 16px 0;">
+                    <button id="tab-btn-pacientes" class="btn-primary" style="padding: 10px 20px; font-weight: 600; cursor: pointer;">🐶 Pacientes do Dia</button>
+                    <button id="tab-btn-agendamento" class="btn-secondary" style="padding: 10px 20px; font-weight: 600; cursor: pointer; background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 8px;">📅 Agendamento de Serviços</button>
+                </div>
+
+                <!-- ABA 1: Pacientes do Dia -->
+                <div id="tab-pacientes" class="pets-section">
                     <div class="section-title-bar">
                         <h3>🐶 Pacientes do Dia & Atendimentos em Andamento</h3>
                         <span class="counter-badge">3 Pacientes Ativos</span>
                     </div>
 
                     <div class="pets-grid">
-                        <!-- Pet 1 -->
                         <div class="pet-card">
                             <div class="pet-avatar-wrapper">
-                                <img src="https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=300&q=80" alt="Golden Retriever Thor" class="pet-avatar">
+                                <img src="https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=300&q=80" alt="Thor" class="pet-avatar">
                                 <span class="badge-status badge-warning">Banho & Tosa</span>
                             </div>
                             <div class="pet-info">
@@ -130,10 +135,9 @@
                             </div>
                         </div>
 
-                        <!-- Pet 2 -->
                         <div class="pet-card">
                             <div class="pet-avatar-wrapper">
-                                <img src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=300&q=80" alt="Poodle Mel" class="pet-avatar">
+                                <img src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=300&q=80" alt="Mel" class="pet-avatar">
                                 <span class="badge-status badge-info">Veterinário</span>
                             </div>
                             <div class="pet-info">
@@ -146,10 +150,9 @@
                             </div>
                         </div>
 
-                        <!-- Pet 3 -->
                         <div class="pet-card">
                             <div class="pet-avatar-wrapper">
-                                <img src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=300&q=80" alt="Bulldog Francês Bob" class="pet-avatar">
+                                <img src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=300&q=80" alt="Bob" class="pet-avatar">
                                 <span class="badge-status badge-success">Concluído</span>
                             </div>
                             <div class="pet-info">
@@ -161,6 +164,52 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- ABA 2: Agendamento -->
+                <div id="tab-agendamento" class="pets-section hidden" style="display: none;">
+                    <div class="section-title-bar">
+                        <h3>📅 Novo Agendamento de Pet</h3>
+                    </div>
+
+                    <div style="background: #111827; padding: 24px; border-radius: 12px; border: 1px solid #1f2937; margin-bottom: 24px;">
+                        <form id="form-novo-agendamento" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                            <div>
+                                <label style="display:block; margin-bottom: 6px; font-size: 0.85rem; color: #94a3b8;">Nome do Pet</label>
+                                <input type="text" id="ag-pet-nome" placeholder="Ex: Rex" required style="width: 100%; padding: 10px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #fff;">
+                            </div>
+                            <div>
+                                <label style="display:block; margin-bottom: 6px; font-size: 0.85rem; color: #94a3b8;">Raça</label>
+                                <input type="text" id="ag-pet-raca" placeholder="Ex: Labrador" required style="width: 100%; padding: 10px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #fff;">
+                            </div>
+                            <div>
+                                <label style="display:block; margin-bottom: 6px; font-size: 0.85rem; color: #94a3b8;">Nome do Tutor</label>
+                                <input type="text" id="ag-tutor-nome" placeholder="Ex: João Souza" required style="width: 100%; padding: 10px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #fff;">
+                            </div>
+                            <div>
+                                <label style="display:block; margin-bottom: 6px; font-size: 0.85rem; color: #94a3b8;">Tipo de Atendimento</label>
+                                <select id="ag-tipo-servico" style="width: 100%; padding: 10px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #fff;">
+                                    <option value="Banho & Tosa">Banho & Tosa</option>
+                                    <option value="Consulta Veterinária">Consulta Veterinária</option>
+                                    <option value="Vacinação">Vacinação & Medicamentos</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display:block; margin-bottom: 6px; font-size: 0.85rem; color: #94a3b8;">Data e Horário</label>
+                                <input type="datetime-local" id="ag-data-hora" required style="width: 100%; padding: 10px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #fff;">
+                            </div>
+                            <div style="display: flex; align-items: flex-end;">
+                                <button type="submit" class="btn-primary" style="width: 100%; padding: 12px; background: #10b981; border: none; border-radius: 6px; color: #fff; font-weight: bold; cursor: pointer;">Cadastrar Agendamento 🐾</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="section-title-bar">
+                        <h3>📋 Agendamentos Confirmados</h3>
+                    </div>
+                    <div id="lista-agendamentos" class="pets-grid">
+                        <!-- Itens adicionados dinamicamente via app.js -->
                     </div>
                 </div>
             </main>
