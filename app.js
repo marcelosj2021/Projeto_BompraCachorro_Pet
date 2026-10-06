@@ -1,12 +1,23 @@
 // ==========================================
-// Constantes de Autenticação e Chaves
+// Constantes de Autenticação Segura (SHA-256)
 // ==========================================
 const VALID_USER = 'operador_vet';
-const VALID_PASS = 'VetMaster@2026Secure';
-const VALID_PASS_ALT = 'PetSeguro@2026';
+
+// Hashes SHA-256 das senhas autorizadas (texto plano não exposto)
+const VALID_PASS_HASH = '256a26df093771144ffe808bfa6127d56e69911e77b61458c23b223e5f91f6ad';
+const VALID_PASS_HASH_ALT = '899f8eb7ff3b99dbfe595568ef5c1103c81216666df3b3e2182046fa32d43a67';
 
 const SESSION_TOKEN_KEY = 'bompracachorro_token';
 const SESSION_USER_KEY = 'bompracachorro_user';
+
+// Função de hashing criptográfico SHA-256
+async function sha256(text) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 // Base de dados local de agendamentos
 let agendamentos = [
@@ -64,10 +75,9 @@ function showLogin() {
 }
 
 // ==========================================
-// Interacção dos Botões de Abas / Serviços
+// Interação dos Botões de Abas / Serviços
 // ==========================================
 function setupAbas() {
-    // Procura o botão de agendamento por ID ou pelo texto
     let btnAgendar = document.getElementById('tab-btn-agendamento');
     if (!btnAgendar) {
         document.querySelectorAll('button').forEach(btn => {
@@ -78,7 +88,6 @@ function setupAbas() {
     const secaoPacientes = document.querySelector('.pets-section') || document.getElementById('tab-pacientes');
     let secaoAgendamento = document.getElementById('tab-agendamento');
 
-    // Se o elemento do agendamento não existir no HTML, cria a estrutura dinamicamente
     if (!secaoAgendamento && secaoPacientes) {
         secaoAgendamento = document.createElement('div');
         secaoAgendamento.id = 'tab-agendamento';
@@ -128,16 +137,14 @@ function setupAbas() {
 
     if (btnAgendar) {
         btnAgendar.onclick = () => {
-            const painelAgendamentoAberto = secaoAgendamento.style.display !== 'none';
+            const painelAgendamentoAberto = secaoAgendamento && secaoAgendamento.style.display !== 'none';
             if (painelAgendamentoAberto) {
-                // Alterna de volta para Pacientes
                 secaoAgendamento.style.display = 'none';
                 if (secaoPacientes) secaoPacientes.style.display = 'block';
                 btnAgendar.textContent = '📅 Agendamento de Serviços';
                 btnAgendar.style.background = '#2563eb';
             } else {
-                // Exibe o painel de Agendamento
-                secaoAgendamento.style.display = 'block';
+                if (secaoAgendamento) secaoAgendamento.style.display = 'block';
                 if (secaoPacientes) secaoPacientes.style.display = 'none';
                 btnAgendar.textContent = '🐶 Ver Pacientes do Dia';
                 btnAgendar.style.background = '#059669';
@@ -146,7 +153,6 @@ function setupAbas() {
         };
     }
 
-    // Formulário de submissão do agendamento
     const formAg = document.getElementById('form-novo-agendamento');
     if (formAg) {
         formAg.onsubmit = (e) => {
@@ -159,12 +165,12 @@ function setupAbas() {
 
             if (!pet || !tutor || !dataHora) return;
 
-            const formatData = new Date(dataHora).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
+            const formatData = new Date(dataHora).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 
             agendamentos.unshift({ pet, raca, tutor, servico, horario: formatData });
             formAg.reset();
             renderizarAgendamentos();
-            alert(`Sucesso: Agendamento para ${pet} guardado!`);
+            alert(`Sucesso: Agendamento para ${pet} registrado!`);
         };
     }
 }
@@ -202,27 +208,30 @@ window.removerAgendamento = function(index) {
 };
 
 // ==========================================
-// Inicialização
+// Validação de Autenticação Segura (Hashing)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     setupAbas();
 
-    // Verificação de sessão
     const savedUser = sessionStorage.getItem(SESSION_USER_KEY);
     const savedToken = sessionStorage.getItem(SESSION_TOKEN_KEY);
     if (savedUser && savedToken) {
         showDashboard(savedUser);
     }
 
-    // Formulário de Login
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const usernameInput = document.getElementById('username')?.value.trim();
             const passwordInput = document.getElementById('password')?.value.trim();
 
-            if (usernameInput === VALID_USER && (passwordInput === VALID_PASS || passwordInput === VALID_PASS_ALT)) {
+            if (!usernameInput || !passwordInput) return;
+
+            // Transforma a senha digitada em hash SHA-256 antes da validação
+            const inputHash = await sha256(passwordInput);
+
+            if (usernameInput === VALID_USER && (inputHash === VALID_PASS_HASH || inputHash === VALID_PASS_HASH_ALT)) {
                 const token = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
                 sessionStorage.setItem(SESSION_TOKEN_KEY, token);
                 sessionStorage.setItem(SESSION_USER_KEY, usernameInput);
@@ -234,7 +243,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Botão de Logout
     const btnLogout = document.getElementById('btn-logout');
     if (btnLogout) {
         btnLogout.addEventListener('click', showLogin);
