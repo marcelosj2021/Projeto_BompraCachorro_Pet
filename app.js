@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const MAX_ATTEMPTS  = 4;
     const LOCKOUT_TIME  = 15 * 60 * 1000; // 15 minutos em milissegundos
 
-  // Hash SHA-256 da senha 'VetMaster@2026Secure'
+// Hash SHA-256 da credencial administrativa de acesso
 const VALID_USER_HASH = 'operador_vet';
 const VALID_PASS_HASH = '2ea6373b57ba23ee9e5bc5fa371e549da7752b0f2095f9c5d0124fe72b0c3995';
     
