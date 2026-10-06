@@ -1,100 +1,198 @@
-/**
- * Projeto_BompraCachorro_Pet - Camada Lógica e de Segurança
- * Diretrizes: Secure by Design & Mitigações OWASP Top 10
- */
+// ==========================================
+// Constantes de Acesso e Segurança
+// ==========================================
+const VALID_USER = 'operador_vet';
+const VALID_PASS = 'VetMaster@2026Secure';
+const VALID_PASS_ALT = 'PetSeguro@2026';
 
-// OWASP A03 (Anti-XSS): Sanitização estrita antes de renderizar qualquer texto
-function sanitizeText(input) {
-    if (typeof input !== 'string') return '';
-    const tempDiv = document.createElement('div');
-    tempDiv.textContent = input;
-    return tempDiv.innerHTML;
-}
+const SESSION_TOKEN_KEY = 'bompracachorro_token';
+const SESSION_USER_KEY = 'bompracachorro_user';
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Mapeamento dos elementos do DOM
+// Estado local de agendamentos
+let agendamentos = [
+    {
+        pet: 'Max',
+        raca: 'Beagle',
+        tutor: 'Juliana Lima',
+        servico: 'Consulta Veterinária',
+        horario: 'Amanhã às 10:00'
+    },
+    {
+        pet: 'Pipoca',
+        raca: 'Shih Tzu',
+        tutor: 'Marcos Roberto',
+        servico: 'Banho & Tosa',
+        horario: 'Amanhã às 14:30'
+    }
+];
+
+// ==========================================
+// Controlo de Visualização (Views)
+// ==========================================
+function showDashboard(username) {
     const loginView = document.getElementById('login-view');
     const dashboardView = document.getElementById('dashboard-view');
+    const userDisplay = document.getElementById('logged-user-display');
+
+    if (loginView) loginView.classList.add('hidden');
+    if (dashboardView) dashboardView.classList.remove('hidden');
+    if (userDisplay) userDisplay.textContent = username;
+
+    renderizarAgendamentos();
+}
+
+function showLogin() {
+    const loginView = document.getElementById('login-view');
+    const dashboardView = document.getElementById('dashboard-view');
+
+    sessionStorage.removeItem(SESSION_TOKEN_KEY);
+    sessionStorage.removeItem(SESSION_USER_KEY);
+
+    if (dashboardView) dashboardView.classList.add('hidden');
+    if (loginView) loginView.classList.remove('hidden');
+}
+
+// ==========================================
+// Alternância de Abas
+// ==========================================
+function setupTabs() {
+    const btnTabPacientes = document.getElementById('tab-btn-pacientes');
+    const btnTabAgendamento = document.getElementById('tab-btn-agendamento');
+    const tabPacientes = document.getElementById('tab-pacientes');
+    const tabAgendamento = document.getElementById('tab-agendamento');
+
+    if (btnTabPacientes && btnTabAgendamento) {
+        btnTabPacientes.addEventListener('click', () => {
+            tabPacientes.style.display = 'block';
+            tabAgendamento.style.display = 'none';
+
+            btnTabPacientes.style.background = '#2563eb';
+            btnTabPacientes.style.color = '#fff';
+            btnTabAgendamento.style.background = '#1e293b';
+            btnTabAgendamento.style.color = '#94a3b8';
+        });
+
+        btnTabAgendamento.addEventListener('click', () => {
+            tabPacientes.style.display = 'none';
+            tabAgendamento.style.display = 'block';
+
+            btnTabAgendamento.style.background = '#2563eb';
+            btnTabAgendamento.style.color = '#fff';
+            btnTabPacientes.style.background = '#1e293b';
+            btnTabPacientes.style.color = '#94a3b8';
+        });
+    }
+}
+
+// ==========================================
+// Gestão de Agendamentos
+// ==========================================
+function renderizarAgendamentos() {
+    const container = document.getElementById('lista-agendamentos');
+    if (!container) return;
+
+    container.innerHTML = '';
+    agendamentos.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = 'pet-card';
+        card.innerHTML = `
+            <div class="pet-info" style="width: 100%;">
+                <h4>${item.pet} <span class="breed">${item.raca}</span></h4>
+                <p class="tutor">👤 Tutor: <strong>${item.tutor}</strong></p>
+                <p class="obs">🏷️ Serviço: <strong>${item.servico}</strong></p>
+                <div class="pet-footer" style="display:flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                    <span class="status-indicator info">⏰ ${item.horario}</span>
+                    <button onclick="removerAgendamento(${index})" style="background: transparent; border: 1px solid #ef4444; color: #ef4444; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.75rem;">Cancelar</button>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+window.removerAgendamento = function(index) {
+    agendamentos.splice(index, 1);
+    renderizarAgendamentos();
+};
+
+function setupAgendamentoForm() {
+    const formAg = document.getElementById('form-novo-agendamento');
+    if (formAg) {
+        formAg.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const pet = document.getElementById('ag-pet-nome').value.trim();
+            const raca = document.getElementById('ag-pet-raca').value.trim();
+            const tutor = document.getElementById('ag-tutor-nome').value.trim();
+            const servico = document.getElementById('ag-tipo-servico').value;
+            const dataHora = document.getElementById('ag-data-hora').value;
+
+            if (!pet || !tutor || !dataHora) return;
+
+            const formatData = new Date(dataHora).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+            agendamentos.unshift({
+                pet,
+                raca,
+                tutor,
+                servico,
+                horario: formatData
+            });
+
+            formAg.reset();
+            renderizarAgendamentos();
+            alert(`Agendamento de ${pet} confirmado com sucesso!`);
+        });
+    }
+}
+
+// ==========================================
+// Eventos e Inicialização do Sistema
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    setupTabs();
+    setupAgendamentoForm();
+
+    // Verificação de sessão existente
+    const savedUser = sessionStorage.getItem(SESSION_USER_KEY);
+    const savedToken = sessionStorage.getItem(SESSION_TOKEN_KEY);
+    if (savedUser && savedToken) {
+        showDashboard(savedUser);
+    }
+
+    // Formulário de Login
     const loginForm = document.getElementById('login-form');
     const authAlert = document.getElementById('auth-alert');
-    const loggedUserDisplay = document.getElementById('logged-user-display');
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const usernameInput = document.getElementById('username')?.value.trim();
+            const passwordInput = document.getElementById('password')?.value.trim();
+
+            if (usernameInput === VALID_USER && (passwordInput === VALID_PASS || passwordInput === VALID_PASS_ALT)) {
+                if (authAlert) authAlert.classList.add('hidden');
+
+                const sessionToken = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+                sessionStorage.setItem(SESSION_TOKEN_KEY, sessionToken);
+                sessionStorage.setItem(SESSION_USER_KEY, usernameInput);
+
+                loginForm.reset();
+                showDashboard(usernameInput);
+            } else {
+                if (authAlert) {
+                    authAlert.textContent = 'Identificação ou Chave de Acesso incorreta.';
+                    authAlert.classList.remove('hidden');
+                }
+            }
+        });
+    }
+
+    // Botão de Logout
     const btnLogout = document.getElementById('btn-logout');
-
-    // Chaves de controle de sessão com namespace do projeto
-    const SESSION_TOKEN_KEY = 'pbcp_auth_token';
-    const SESSION_USER_KEY = 'pbcp_auth_user';
-
-    // OWASP A01: Validação de sessão ativa ao carregar a página
-    const activeToken = sessionStorage.getItem(SESSION_TOKEN_KEY);
-    const activeUser = sessionStorage.getItem(SESSION_USER_KEY);
-
-    if (activeToken && activeUser) {
-        showDashboard(activeUser);
-    }
-
-    // Processamento do Formulário de Acesso
-    loginForm.addEventListener('submit', (event) => {
-        event.preventDefault();
-        hideAlert();
-
-        const usernameInput = document.getElementById('username').value.trim();
-        const passwordInput = document.getElementById('password').value;
-
-        // Validação de formato e tamanho no cliente
-        if (!usernameInput || !passwordInput) {
-            showAlert('Informe o usuário e a senha de acesso.');
-            return;
-        }
-
-        if (usernameInput.length > 30 || passwordInput.length > 64) {
-            showAlert('Tamanho de credenciais fora dos limites permitidos.');
-            return;
-        }
-
-        // Credenciais simuladas de validação
-     // Credenciais simuladas de validação
-        const VALID_USER = 'operador_vet';
-        const VALID_PASS = 'VetMaster@2026Secure';
-
-        if (usernameInput === VALID_USER && (passwordInput === VALID_PASS || passwordInput === 'PetSeguro@2026')) {
-            
-            // OWASP A01: Emissão de token volátil criptograficamente seguro
-            const sessionToken = crypto.randomUUID();
-            sessionStorage.setItem(SESSION_TOKEN_KEY, sessionToken);
-            sessionStorage.setItem(SESSION_USER_KEY, usernameInput);
-
-            loginForm.reset();
-            showDashboard(usernameInput);
-        } else {
-            // OWASP A07: Resposta genérica para impedir enumeração de usuários
-            showAlert('Credenciais inválidas. Tente novamente.');
-        }
-    });
-
-    // OWASP A01: Logout funcional com expurgo de sessão
-    btnLogout.addEventListener('click', () => {
-        sessionStorage.removeItem(SESSION_TOKEN_KEY);
-        sessionStorage.removeItem(SESSION_USER_KEY);
-        sessionStorage.clear();
-
-        dashboardView.classList.add('hidden');
-        loginView.classList.remove('hidden');
-    });
-
-    function showDashboard(user) {
-        loginView.classList.add('hidden');
-        dashboardView.classList.remove('hidden');
-        // Renderização segura contra injeção de scripts
-        loggedUserDisplay.textContent = sanitizeText(user);
-    }
-
-    function showAlert(message) {
-        authAlert.textContent = message;
-        authAlert.classList.remove('hidden');
-    }
-
-    function hideAlert() {
-        authAlert.textContent = '';
-        authAlert.classList.add('hidden');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', () => {
+            showLogin();
+        });
     }
 });
